@@ -11,6 +11,7 @@ load_dotenv()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-3.5-flash"
 
+NOTIFICATION_WEBHOOK_URL = os.environ.get("NOTIFICATION_WEBHOOK_URL", "").strip() or None
 # Business hours policy (used later by validation/availability nodes too)
 BUSINESS_HOURS_START = 9   # 9 AM
 BUSINESS_HOURS_END = 18    # 6 PM

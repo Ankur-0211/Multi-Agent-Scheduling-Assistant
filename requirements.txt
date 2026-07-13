@@ -8,3 +8,5 @@ pydantic
 
 dateparser
 pytest
+
+requests
