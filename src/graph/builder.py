@@ -1,31 +1,44 @@
 """
-Phase 1 — a trivial two-node graph: node_a -> node_b -> END.
-Each node increments a counter and appends a log entry.
-This is only meant to prove SqliteSaver checkpointing works end-to-end
-before any real agent/tool logic is built on top of it.
+Phase 2 — real routing graph: triage -> (general answer -> END)
+                                      -> (booking stub -> END)
+
+The Booking Specialist stub is a placeholder; the real subgraph
+(collect info, validate, check availability, reserve, notify) is
+built in Phase 5 per the SDD's phase plan.
 """
+from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, START, END
 
-from src.graph.state import DummyState
+from src.graph.state import SchedulingState
+from src.graph.nodes.triage import triage_node, route_from_triage
 
 
-def node_a(state: DummyState) -> dict:
-    new_count = state.get("counter", 0) + 1
-    print(f"[node_a] counter is now {new_count}")
-    return {"counter": new_count, "log": [f"node_a ran, counter={new_count}"]}
-
-
-def node_b(state: DummyState) -> dict:
-    new_count = state.get("counter", 0) + 1
-    print(f"[node_b] counter is now {new_count}")
-    return {"counter": new_count, "log": [f"node_b ran, counter={new_count}"]}
+def booking_specialist_stub(state: SchedulingState) -> dict:
+    return {
+        "messages": [
+            AIMessage(
+                content="[STUB] The Booking Specialist would take over here. "
+                "(Real booking flow is built in Phase 5.)"
+            )
+        ]
+    }
 
 
 def build_graph(checkpointer):
-    graph = StateGraph(DummyState)
-    graph.add_node("node_a", node_a)
-    graph.add_node("node_b", node_b)
-    graph.add_edge(START, "node_a")
-    graph.add_edge("node_a", "node_b")
-    graph.add_edge("node_b", END)
+    graph = StateGraph(SchedulingState)
+
+    graph.add_node("triage", triage_node)
+    graph.add_node("booking_specialist_stub", booking_specialist_stub)
+
+    graph.add_edge(START, "triage")
+    graph.add_conditional_edges(
+        "triage",
+        route_from_triage,
+        {
+            "booking": "booking_specialist_stub",
+            "general_end": END,
+        },
+    )
+    graph.add_edge("booking_specialist_stub", END)
+
     return graph.compile(checkpointer=checkpointer)

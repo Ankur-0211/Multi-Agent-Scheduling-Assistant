@@ -1,14 +1,24 @@
 """
-Phase 1 — trivial state schema, just to prove checkpointing works.
-The real SchedulingState (messages, intent, booking_fields, etc.)
-is introduced in Phase 2 per the SDD.
+Phase 2 — the real SchedulingState, replacing Phase 1's DummyState.
+Matches the SDD's LangGraph State Schema (SDD section 6) exactly.
 """
-from typing import TypedDict, Annotated
-import operator
+from typing import TypedDict, Annotated, Optional
+from langgraph.graph.message import add_messages
 
 
-class DummyState(TypedDict):
-    counter: int
-    # operator.add as the reducer means every node's returned "log" list
-    # gets appended to the existing log, rather than overwriting it.
-    log: Annotated[list[str], operator.add]
+class BookingFields(TypedDict, total=False):
+    name: Optional[str]
+    email: Optional[str]
+    date: Optional[str]
+    time: Optional[str]
+    purpose: Optional[str]
+
+
+class SchedulingState(TypedDict):
+    messages: Annotated[list, add_messages]   # full conversation, LangChain message objects
+    intent: Optional[str]                      # "general" | "booking" | None
+    booking_fields: BookingFields
+    validation_error: Optional[str]
+    available_slots: Optional[list]
+    booking_confirmed: bool
+    notification_status: Optional[str]
