@@ -33,6 +33,11 @@ _DAYPART_DEFAULTS = {
     "night": "7pm",
 }
 
+_HEDGE_WORDS_RE = re.compile(
+    r"\b(somewhere around|around|roughly|approximately|ish|like)\b",
+    re.IGNORECASE,
+)
+
 
 def _preprocess(text: str) -> tuple[str, bool]:
     approximated = False
@@ -41,6 +46,14 @@ def _preprocess(text: str) -> tuple[str, bool]:
     if _DAYPART_RE.search(text) and not re.search(r"\d", text):
         approximated = True
         text = _DAYPART_RE.sub(lambda m: _DAYPART_DEFAULTS[m.group(1).lower()], text)
+
+    # Hedge words ("around 2pm", "roughly 2pm", "ish") silently break dateparser
+    # entirely -- strip them, and treat the result as approximated since the
+    # user themselves signaled uncertainty about the exact time.
+    if _HEDGE_WORDS_RE.search(text):
+        approximated = True
+        text = _HEDGE_WORDS_RE.sub("", text)
+        text = re.sub(r"\s+", " ", text).strip()
 
     return text, approximated
 

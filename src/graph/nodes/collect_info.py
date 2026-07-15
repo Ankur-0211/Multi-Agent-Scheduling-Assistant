@@ -37,11 +37,16 @@ class BookingExtraction(BaseModel):
     time_text: Optional[str] = Field(default=None, description="Raw natural-language time phrase, verbatim, if mentioned in THIS message.")
     purpose: Optional[str] = Field(default=None, description="The reason/purpose for the appointment, if mentioned in THIS message.")
 
-
 EXTRACTION_SYSTEM_PROMPT = """You extract booking details from a user's message for a scheduling
 assistant. Only extract fields the user actually mentioned in THIS message --
-leave a field null if it wasn't mentioned. Do not guess or invent values."""
+leave a field null if it wasn't mentioned. Do not guess or invent values.
 
+IMPORTANT for date_text and time_text: only extract a value if it is a
+concrete, self-contained date/time expression (e.g. "next Tuesday", "3pm",
+"Wednesday afternoon"). If the user instead refers back to something said
+earlier without restating it concretely (e.g. "same time", "same day",
+"as before", "like I said"), leave that field null -- do not extract the
+vague reference text itself."""
 
 def _last_human_message(messages) -> str:
     for m in reversed(messages):
